@@ -19,13 +19,14 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./examples/undistort_output.png "Undistorted"
-[image2]: ./test_images/test1.jpg "Road Transformed"
-[image3]: ./examples/binary_combo_example.jpg "Binary Example"
-[image4]: ./examples/warped_straight_lines.jpg "Warp Example"
-[image5]: ./examples/color_fit_lines.jpg "Fit Visual"
-[image6]: ./examples/example_output.jpg "Output"
-[video1]: ./project_video.mp4 "Video"
+[image1]: ./output_images/calibration5.jpg "Undistorted"
+[image2]: ./output_images/test2.jpg "Road Transformed"
+[image3]: ./output_images/test3_binary.jpg "Binary Example"
+[image4]: ./output_images/straight_lines_transf.jpg "Warp Example"
+[image5]: ./output_images/test2.jpg "Fit Visual"
+
+[image6]: ./output_images/test2.jpg "Output"
+[video1]: ./output_images/project_video.mp4 "Video"
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/571/view) Points
 
@@ -39,11 +40,15 @@ The goals / steps of this project are the following:
 
 You're reading it!
 
+
+
+
+
 ### Camera Calibration
 
 #### 1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
 
-The code for this step is contained in the first code cell of the IPython notebook located in "./examples/example.ipynb" (or in lines # through # of the file called `some_file.py`).  
+The code for this step is contained in the second cell of the IPython notebook located in "untitled.ipynb".  
 
 I start by preparing "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image.  Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image.  `imgpoints` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.  
 
@@ -57,56 +62,41 @@ I then used the output `objpoints` and `imgpoints` to compute the camera calibra
 
 To demonstrate this step, I will describe how I apply the distortion correction to one of the test images like this one:
 ![alt text][image2]
+As above I just use cv2.undistort with the matrix and dist calculated above.
+
 
 #### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
+In the first cell after the headline "Thresholded Image" I define the functions I combine to get a thresholded image.
+In the next cell I use a combination of color and gradient thresholds to generate a binary image.  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
 
 ![alt text][image3]
 
 #### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
-The code for my perspective transform includes a function called `warper()`, which appears in lines 1 through 8 in the file `example.py` (output_images/examples/example.py) (or, for example, in the 3rd code cell of the IPython notebook).  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
+Under the headline Perspective transform I first used an image of straight lines to determine  source points (called pts) that shall be mapped onto a rectangle by my transformation. Therfore I used points of the lane lines at the bottom  of the image and some way up. I visualized the polygon on the image.
+In the next cell within the function persp_transf I define destination points using an offset and calculate the transforamtion matrix.
+In the function transform I combine unditortion with the perspective transform. This leads to the following picture:
 
-```python
-src = np.float32(
-    [[(img_size[0] / 2) - 55, img_size[1] / 2 + 100],
-    [((img_size[0] / 6) - 10), img_size[1]],
-    [(img_size[0] * 5 / 6) + 60, img_size[1]],
-    [(img_size[0] / 2 + 55), img_size[1] / 2 + 100]])
-dst = np.float32(
-    [[(img_size[0] / 4), 0],
-    [(img_size[0] / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), 0]])
-```
-
-This resulted in the following source and destination points:
-
-| Source        | Destination   | 
-|:-------------:|:-------------:| 
-| 585, 460      | 320, 0        | 
-| 203, 720      | 320, 720      |
-| 1127, 720     | 960, 720      |
-| 695, 460      | 960, 0        |
-
-I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
 
 ![alt text][image4]
 
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
 Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
+I identified line pixels by first using a histogram to find the starting point for the left and right line. After fixing the parameters I regarded the nonzero pixels within rectangles with bottom center at the above defined positions and depending on the postions of the nonzero pixels I moved the rectangles above the to the right or left (compared to the one at the bottom). The nonzero points within these rectangles are saved and returned by the function.
+These are then used in the function fit_polynomial to calculate the coefficients of a second order polynomial and calculate other things like the curvature and the position of the car.
+This is a visualisation of my fitted polynomial
 
 ![alt text][image5]
 
 #### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
-I did this in lines # through # in my code in `my_other_file.py`
+I did this in lines 15 through 30 the function fit_polynomial. I used the formula from the lecture to calculate the curvature and transformed it back to meter (instead of pixels) by using the fact that a lane is about 3.7m wide in my transformation it was 700 pixels wide so I used the factor 3.7/700 to transform the x coordinate. (Similarly for y)
 
 #### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
+I implemented this step in the cell above the headline video.  Here is an example of my result on a test image:
 
 ![alt text][image6]
 
@@ -125,3 +115,7 @@ Here's a [link to my video result](./project_video.mp4)
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
 Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+
+I used the class Line proposed in tips and tricks. I used a right and a left line as global variables and using a new image I updated the Lines if the values for the new lines that were detected in the image were reasonable (I decided to calculate the width of the lane at the bottom of the image and at the upper end of the detected area and see if it is within a range of the 3.7m that are the minimal width of a lane). For non-reasonable values I decided to keep the old values from a well detected image. Besides having discovered good lines I used them to only take a certain area around them in the next image and ignore all the rest (done in the function helper in the third cell after the headline pipline).
+
+There are certainly many things to be improved. For example the processing does not work if the lines are not well detected in the first image of the video. Besides shadows and other unusual marks on the road (as in the challenge videos) are still a problem. To use it in a real car the computation takes too long so the current lines would be calculated too late.
